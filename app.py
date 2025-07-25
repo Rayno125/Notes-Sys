@@ -57,6 +57,18 @@ def create_user(username, password):
     db.session.commit()
     return f'Пользователь {username} успешно создан!'
 
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        user = User(username=username,password=password)
+        db.session.add(user)
+        db.session.commit()
+        return f'Пользователь {username} успешно создан!'
+    return render_template('login.html', form_type = 'register')
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -69,7 +81,7 @@ def login():
         else:
             flash('Неверный логин или пароль')
             return redirect(url_for('login'))
-    return render_template('login.html')
+    return render_template('login.html', form_type = 'login')
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()

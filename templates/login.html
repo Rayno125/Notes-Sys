@@ -16,6 +16,8 @@
             </div>
         {% endif %}
     {% endwith %}
+
+    {% if form_type == 'login' %}
     <div class="Login-Box">
         <form action="{{ url_for('login') }}" method="POST">
             <h2>Login</h2>
@@ -33,5 +35,24 @@
             <button type="submit">Войти</button>
         </form>
     </div>
+    {% elif form_type == 'register' %}
+    <div class="Register-Box">
+        <form action="{{ url_for('register') }}" method="POST">
+            <h2>Register</h2>
+            <div class="input-box">
+                <input type="text" id="username" name="username" required>
+                <label for="username">Login</label>
+
+            </div>
+
+            <div class="input-box">
+                <input type="password" id="password" name="password" required>
+                <label for="password">Password</label>
+
+            </div>
+            <button type="submit">Войти</button>
+        </form>
+    </div>
+    {% endif %}
 </body>
 </html>
