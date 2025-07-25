@@ -48,9 +48,9 @@ def get_notes(username):
     
     return {note.id: note.title + '/'+ note.content for note in notes}
   
-@app.route('/create_user/<username>')
-def create_user(username):
-    user = User(username=username)
+@app.route('/create_user/<username>/<password>')
+def create_user(username, password):
+    user = User(username=username, password=password)
     db.session.add(user)
     db.session.commit()
     return f'Пользователь {username} успешно создан!'
