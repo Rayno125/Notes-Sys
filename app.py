@@ -1,4 +1,4 @@
-from flask import Flask, render_template, url_for
+from flask import Flask, render_template, url_for, request,redirect,flash
 from flask_sqlalchemy import SQLAlchemy
 from models import Note, User
 from db_config import db
@@ -9,6 +9,8 @@ from db_config import db
 
 
 app = Flask(__name__)
+
+app.secret_key = 'my_super_secret_key_12345'
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 
@@ -55,8 +57,19 @@ def create_user(username, password):
     db.session.commit()
     return f'Пользователь {username} успешно создан!'
 
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
 
-
+        user = User.query.filter_by(username=username).first()
+        if user and user.password == password:
+            return redirect(url_for('index'))
+        else:
+            flash('Неверный логин или пароль')
+            return redirect(url_for('login'))
+    return render_template('login.html')
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
