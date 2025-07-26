@@ -7,7 +7,7 @@ from db_config import db
 
 
 
-
+#Main parts of app----------------------------------------
 app = Flask(__name__)
 
 app.secret_key = 'my_super_secret_key_12345'
@@ -21,12 +21,18 @@ db.init_app(app)
 
 
 
+
+def check_user(username):
+    return User.query.filter_by(username=username).first() is not None
+
+
 @app.route('/')
 
 def index():
     return render_template('index.html')
 
 
+    
 
 @app.route('/add/<username>')
 def add_note(username):
@@ -50,12 +56,12 @@ def get_notes(username):
     
     return {note.id: note.title + '/'+ note.content for note in notes}
   
-@app.route('/create_user/<username>/<password>')
-def create_user(username, password):
-    user = User(username=username, password=password)
-    db.session.add(user)
-    db.session.commit()
-    return f'Пользователь {username} успешно создан!'
+# @app.route('/create_user/<username>/<password>')
+# def create_user(username, password):
+#     user = User(username=username, password=password)
+#     db.session.add(user)
+#     db.session.commit()
+#     return f'Пользователь {username} успешно создан!'
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -63,10 +69,15 @@ def register():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        user = User(username=username,password=password)
-        db.session.add(user)
-        db.session.commit()
-        return f'Пользователь {username} успешно создан!'
+        if check_user(username):
+            flash('Пользователь существует')
+            return redirect(url_for('register'))
+
+        else:
+            user = User(username=username,password=password)
+            db.session.add(user)
+            db.session.commit()
+            return f'Пользователь {username} успешно создан!'
     return render_template('login.html', form_type = 'register')
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -82,6 +93,9 @@ def login():
             flash('Неверный логин или пароль')
             return redirect(url_for('login'))
     return render_template('login.html', form_type = 'login')
+
+
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
