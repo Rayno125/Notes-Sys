@@ -2,8 +2,7 @@ from flask import Flask, render_template, url_for, request,redirect,flash
 from flask_sqlalchemy import SQLAlchemy
 from models import Note, User
 from db_config import db
-
-
+from flasgger import Swagger
 
 
 
@@ -11,6 +10,8 @@ from db_config import db
 app = Flask(__name__)
 
 app.secret_key = 'my_super_secret_key_12345'
+
+swagger = Swagger(app)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 
@@ -66,6 +67,7 @@ def get_notes(username):
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
@@ -74,7 +76,8 @@ def register():
             return redirect(url_for('register'))
 
         else:
-            user = User(username=username,password=password)
+            user = User(username=username)
+            user.set_password(password)
             db.session.add(user)
             db.session.commit()
             return f'Пользователь {username} успешно создан!'
@@ -87,7 +90,7 @@ def login():
         password = request.form['password']
 
         user = User.query.filter_by(username=username).first()
-        if user and user.password == password:
+        if user and user.check_password(password):
             return redirect(url_for('index'))
         else:
             flash('Неверный логин или пароль')
