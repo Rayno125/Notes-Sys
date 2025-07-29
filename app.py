@@ -1,9 +1,9 @@
-from flask import Flask, render_template, url_for, request,redirect,flash
+from flask import Flask, render_template, url_for, request,redirect,flash, session
 from flask_sqlalchemy import SQLAlchemy
 from models import Note, User
 from db_config import db
 from flasgger import Swagger
-
+from time import sleep
 
 
 #Main parts of app----------------------------------------
@@ -23,6 +23,7 @@ db.init_app(app)
 
 
 
+
 def check_user(username):
     return User.query.filter_by(username=username).first() is not None
 
@@ -30,7 +31,10 @@ def check_user(username):
 @app.route('/')
 
 def index():
-    return render_template('index.html')
+    if 'username' not in session:
+        return render_template('index.html',session_html=False)
+    else:
+        return render_template('index.html',username=session['username'], session_html = True)
 
 
     
@@ -80,7 +84,11 @@ def register():
             user.set_password(password)
             db.session.add(user)
             db.session.commit()
-            return f'Пользователь {username} успешно создан!'
+            session['username'] = username
+            
+            
+            return render_template('login.html', form_type = 'register', registered = True, username = username)
+    
     return render_template('login.html', form_type = 'register')
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -91,16 +99,21 @@ def login():
 
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
+            session['username'] = username
             return redirect(url_for('index'))
         else:
             flash('Неверный логин или пароль')
             return redirect(url_for('login'))
     return render_template('login.html', form_type = 'login')
 
+@app.route('/logout')
+def logout():
+    session.pop('username', None)
+    return redirect(url_for('login'))
 
 
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
 
