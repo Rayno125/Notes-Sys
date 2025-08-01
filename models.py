@@ -1,8 +1,11 @@
-from db_config import db
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_sqlalchemy import SQLAlchemy
+
+db = SQLAlchemy()
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(80),unique=True, nullable=False)
     username = db.Column(db.String(80), unique=True,nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
 
@@ -17,6 +20,12 @@ class User(db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'email': self.email,
+            'username': self.username
+        }
 
 class Note(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -27,4 +36,11 @@ class Note(db.Model):
 
     def __repr__(self):
         return f'<Note{self.title}>'
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'title': self.title,
+            'content': self.content
+        }
     

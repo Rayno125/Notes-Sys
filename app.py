@@ -1,7 +1,6 @@
 from flask import Flask, render_template, url_for, request,redirect,flash, session
 from flask_sqlalchemy import SQLAlchemy
-from models import Note, User
-from db_config import db
+from models import db, Note, User
 from flasgger import Swagger
 from time import sleep
 
@@ -73,6 +72,7 @@ def get_notes(username):
 def register():
     
     if request.method == 'POST':
+        email = request.form['email']
         username = request.form['username']
         password = request.form['password']
         if check_user(username):
@@ -80,7 +80,7 @@ def register():
             return redirect(url_for('register'))
 
         else:
-            user = User(username=username)
+            user = User(username=username, email=email)
             user.set_password(password)
             db.session.add(user)
             db.session.commit()
