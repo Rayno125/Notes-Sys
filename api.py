@@ -151,7 +151,7 @@ def login():
     user = User.query.filter_by(username=data.username).first()
     if user and user.check_password(data.password):
         
-        access_token = create_access_token(identity=data.username)
+        access_token = create_access_token(identity=user.id)
         refresh_token = create_refresh_token(identity=user.id)
         
         return jsonify({
@@ -211,7 +211,7 @@ def get_notes():
         description: Пользователь не найден
     """
     current_user = get_jwt_identity()
-    user = User.query.filter_by(username=current_user).first()
+    user = User.query.get(current_user)
 
     if not user:
         return jsonify({'error': 'User not found'}), 404
@@ -272,7 +272,7 @@ def add_note():
         return jsonify({'errors': e.errors()}), 400
 
     current_user = get_jwt_identity()
-    user = User.query.filter_by(username=current_user).first()
+    user = User.query.get(current_user)
 
     if not user:
         return jsonify({'error': 'User not found'}), 404
