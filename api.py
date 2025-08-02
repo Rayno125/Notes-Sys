@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from models import db, Note, User
 from flasgger import Swagger
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, create_refresh_token
 from datetime import timedelta
 from pydantic import ValidationError
 from schemas import UserRegisterSchema, UserLoginSchema, NoteSchema
@@ -14,6 +14,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 app.config['JWT_SECRET_KEY'] = 'super-secret-jwt-key-12345'  # Сменить на свой!
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=1)
+app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=30)
 
 db.init_app(app)
 jwt = JWTManager(app)
@@ -93,7 +94,15 @@ def register():
     db.session.add(user)
     db.session.commit()
 
-    return jsonify({'message': f'User {data.username} registered successfully'}), 201
+    access_token = create_access_token(identity=user.id)
+    refresh_token = create_refresh_token(identity=user.id)
+
+    return jsonify({
+        'message': 'Вход выполнен',
+        'access_token': access_token,
+        'refresh_token': refresh_token
+    }), 200
+
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -141,10 +150,33 @@ def login():
 
     user = User.query.filter_by(username=data.username).first()
     if user and user.check_password(data.password):
+        
         access_token = create_access_token(identity=data.username)
-        return jsonify({'access_token': access_token}), 200
+        refresh_token = create_refresh_token(identity=user.id)
+        
+        return jsonify({
+              'message': 'Вход выполнен',
+              'access_token': access_token,
+              'refresh_token': refresh_token
+          }), 200
 
     return jsonify({'error': 'Invalid username or password'}), 401
+
+
+@app.route('/refresh', methods=['POST'])
+@jwt_required(refresh=True)
+def refresh():
+    current_user_id = get_jwt_identity()
+    new_access_token = create_access_token(identity=current_user_id)
+    # При желании можно обновлять и refresh токен
+    new_refresh_token = create_refresh_token(identity=current_user_id)
+
+    return jsonify({
+        'access_token': new_access_token,
+        'refresh_token': new_refresh_token  # если будешь обновлять refresh токен
+    }), 200
+
+
 
 @app.route('/notes', methods=['GET'])
 @jwt_required()
