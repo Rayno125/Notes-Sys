@@ -1,15 +1,12 @@
-from flask import Flask, render_template, url_for, request,redirect,flash, session, jsonify
+from flask import Flask, render_template, url_for, request,redirect,flash, session
 from flask_sqlalchemy import SQLAlchemy
-from backend.models import db, Note, User
+from models import db, Note, User
 from flasgger import Swagger
 from time import sleep
-from backend.service.user_service import*
-
-
 
 
 #Main parts of app----------------------------------------
-app = Flask(__name__, template_folder="frontend/templates")
+app = Flask(__name__)
 
 app.secret_key = 'my_super_secret_key_12345'
 
@@ -23,8 +20,14 @@ db.init_app(app)
 # db = SQLAlchemy(app)
 
 
-@app.route('/')
 
+
+
+def check_user(username):
+    return User.query.filter_by(username=username).first() is not None
+
+
+@app.route('/')
 
 def index():
     if 'username' not in session:
@@ -67,40 +70,41 @@ def get_notes(username):
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    if request.method == "GET":
-        return render_template('login.html', form_type='register')
-    data = request.form
+    
+    if request.method == 'POST':
+        email = request.form['email']
+        username = request.form['username']
+        password = request.form['password']
+        if check_user(username):
+            flash('Пользователь существует')
+            return redirect(url_for('register'))
 
-
-
-
-    user = create_user(data.get('username'), data.get('email'), data.get('password'))
+        else:
+            user = User(username=username, email=email)
+            user.set_password(password)
+            db.session.add(user)
+            db.session.commit()
+            session['username'] = username
             
+            
+            return render_template('login.html', form_type = 'register', registered = True, username = username)
     
-    session['username'] = user.username
-    return render_template('login.html', form_type = 'register', registered = True, username = user.username)
-    
-   
-
-    
-
+    return render_template('login.html', form_type = 'register')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    data = request.form
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
 
-
-
-    user = login_user(data.get('username'), data.get('password'))
-    if not user:
-        flash('Неверный логин или пароль')
-        return redirect(url_for('login'))
-
-
-
-    session['username'] = user.username
-    return redirect(url_for('index'))
-
+        user = User.query.filter_by(username=username).first()
+        if user and user.check_password(password):
+            session['username'] = username
+            return redirect(url_for('index'))
+        else:
+            flash('Неверный логин или пароль')
+            return redirect(url_for('login'))
+    return render_template('login.html', form_type = 'login')
 
 @app.route('/logout')
 def logout():
